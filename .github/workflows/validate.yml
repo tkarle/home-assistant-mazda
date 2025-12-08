@@ -5,7 +5,6 @@ on:
 jobs:
   validate-hassfest:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
@@ -16,4 +15,4 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          ignore: pr,brands,description,issues
+          ignore: "pr, brands, topics, issues"
