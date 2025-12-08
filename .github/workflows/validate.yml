@@ -15,5 +15,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hacs/action@main
         with:
-          category: integration
-          ignore: "brands,topics,issues,pr"
+          category: "integration"
+          ignore: "brands,topics,issues"
