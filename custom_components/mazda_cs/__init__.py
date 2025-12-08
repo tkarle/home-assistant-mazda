@@ -1,16 +1,20 @@
-"""Mazda Connected Services v2 setup (OAuth2 + PKCE)."""
 from __future__ import annotations
 
 import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_REGION, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN, DATA_COORDINATOR, DEFAULT_REGION
+from .const import DATA_COORDINATOR, DEFAULT_REGION, DOMAIN
 from .coordinator import MazdaDataCoordinator
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema("mazda_cs")
+
 _LOGGER = logging.getLogger(__name__)
+
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.SWITCH]
 
@@ -52,14 +56,16 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return True
 
     from homeassistant.const import CONF_EMAIL, CONF_REGION
+
     data = dict(entry.data)
     data.setdefault(CONF_REGION, "MME")
-    unique_id = entry.unique_id or f"{data.get(CONF_EMAIL,'').lower()}_{data.get(CONF_REGION)}"
+    unique_id = entry.unique_id or f"{data.get(CONF_EMAIL, '').lower()}_{data.get(CONF_REGION)}"
     hass.config_entries.async_update_entry(entry, data=data, unique_id=unique_id, version=2)
     _LOGGER.info("Migrated entry '%s' to version 2", entry.title)
     return True
 
-#async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+
+# async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 #    coord: MazdaDataCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 #    await coord.api.async_close()
 #    return True

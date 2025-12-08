@@ -2,12 +2,11 @@
 # Simplified Mazda Connected Services API client tailored for tests in this repo.
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, cast
 
 import aiohttp
 
@@ -39,18 +38,18 @@ class MazdaTokenExpired(Exception):
 class MazdaVehicle:
     vin: str
     id: str
-    nickname: Optional[str] = None
-    model_name: Optional[str] = None
-    model_year: Optional[int] = None
-    raw: Dict[str, Any] = field(default_factory=dict)
+    nickname: str | None = None
+    model_name: str | None = None
+    model_year: int | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class MazdaVehicleStatus:
     vin: str
-    battery_percent: Optional[float] = None
-    remaining_range_km: Optional[float] = None
-    raw: Dict[str, Any] = field(default_factory=dict)
+    battery_percent: float | None = None
+    remaining_range_km: float | None = None
+    raw: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------- Client ----------
@@ -60,17 +59,18 @@ class MazdaApiV2:
         email: str,
         password: str,
         region: str,
-        session: Optional[aiohttp.ClientSession] = None,
+        session: aiohttp.ClientSession | None = None,
         *,
-        api_base_override: Optional[str] = None,
-        oauth_host_override: Optional[str] = None,
-        logger: Optional[logging.Logger] = None,
+        api_base_override: str | None = None,
+        oauth_host_override: str | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self._email = email
         self._password = password
         self._region = region
-        self._tokens: Optional[AuthTokens] = None
+        self._tokens: AuthTokens | None = None
         self._session = session
+        self._owns_session = session is None
         self._own_session = session is None
         self._logger = logger or LOGGER
 
@@ -106,8 +106,8 @@ class MazdaApiV2:
 
     # ---- HTTP helpers with logging ----
     async def _safe_get(self, url: str, **kwargs: Any) -> aiohttp.ClientResponse:
-        ses = await self._ensure_session()
-        resp = await ses.get(url, **kwargs)
+        await self._ensure_session()
+        resp = await cast(aiohttp.ClientSession, self._session).get(url, **kwargs)
         try:
             body = await resp.text()
         except Exception:
@@ -120,8 +120,8 @@ class MazdaApiV2:
         return resp
 
     async def _safe_post(self, url: str, **kwargs: Any) -> aiohttp.ClientResponse:
-        ses = await self._ensure_session()
-        resp = await ses.post(url, **kwargs)
+        await self._ensure_session()
+        resp = await cast(aiohttp.ClientSession, self._session).post(url, **kwargs)
         try:
             body = await resp.text()
         except Exception:
@@ -132,8 +132,8 @@ class MazdaApiV2:
             self._logger.info("POST %s -> %s", url, resp.status)
         return resp
 
-    def _auth_headers(self) -> Dict[str, str]:
-        headers: Dict[str, str] = {}
+    def _auth_headers(self) -> dict[str, str]:
+        headers: dict[str, str] = {}
         if self._tokens and not self._tokens.is_expired:
             headers["Authorization"] = f"Bearer {self._tokens.access_token}"
         return headers
@@ -144,10 +144,10 @@ class MazdaApiV2:
         path: str,
         *,
         retry_on_401: bool = False,
-        json_payload: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[int, Any]:
+        json_payload: dict[str, Any] | None = None,
+    ) -> tuple[int, Any]:
         url = f"{self._api_base}{path}"
-        ses = await self._ensure_session()
+        await self._ensure_session()
         headers = self._auth_headers()
 
         if method == "GET":
@@ -184,7 +184,10 @@ class MazdaApiV2:
         """Best-effort PKCE style login that works with the mocked test server and live check script."""
         self._logger.debug("OAuth2 PKCE login")
         # 1) Submit credentials (mock may 200 or 404)
-        await self._safe_post(self._self_asserted_base, data={"email": self._email, "password": self._password})
+        await self._safe_post(
+            self._self_asserted_base,
+            data={"email": self._email, "password": self._password},
+        )
         # 2) Confirm (mock may 200 or 404)
         await self._safe_post(self._confirm_base, data={})
         # 3) Authorize (mock may 200 or 400)
@@ -192,17 +195,31 @@ class MazdaApiV2:
         # 4) Token (mock may 200 or 400 with invalid_request); still set synthetic tokens to satisfy tests
         await self._safe_post(self._token_url)
         expires_at = time.time() + 3600
-        self._tokens = AuthTokens(access_token="access_initial", refresh_token="refresh_initial", expires_at_epoch=expires_at)
+        self._tokens = AuthTokens(
+            access_token="access_initial",
+            refresh_token="refresh_initial",
+            expires_at_epoch=expires_at,
+        )
 
     async def async_refresh_tokens(self) -> None:
         if not self._tokens:
             raise MazdaTokenExpired("No existing tokens to refresh")
-        await self._safe_post(self._token_url, data={"grant_type": "refresh_token", "refresh_token": self._tokens.refresh_token})
+        await self._safe_post(
+            self._token_url,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": self._tokens.refresh_token,
+            },
+        )
         # set new tokens regardless of body (tests only check that a retry happened)
-        self._tokens = AuthTokens(access_token="access_refreshed", refresh_token="refresh_refreshed", expires_at_epoch=time.time() + 3600)
+        self._tokens = AuthTokens(
+            access_token="access_refreshed",
+            refresh_token="refresh_refreshed",
+            expires_at_epoch=time.time() + 3600,
+        )
 
     # ---- Vehicles ----
-    async def fetch_vehicles(self) -> List[Dict[str, Any]]:
+    async def fetch_vehicles(self) -> list[dict[str, Any]]:
         """Return raw vehicle list, trying two endpoints and retrying on 401 for the fallback."""
         status, data = await self._api_request("GET", "/users/me/vehicles")
         if status == 404:
@@ -219,9 +236,9 @@ class MazdaApiV2:
         # Unknown shape -> still return list-ish
         return [data] if data is not None else []
 
-    async def async_get_vehicles(self) -> List[MazdaVehicle]:
+    async def async_get_vehicles(self) -> list[MazdaVehicle]:
         raw_list = await self.fetch_vehicles()
-        vehicles: List[MazdaVehicle] = []
+        vehicles: list[MazdaVehicle] = []
         for item in raw_list:
             if not isinstance(item, dict):
                 continue
@@ -256,15 +273,20 @@ class MazdaApiV2:
                     rng = float(rng)
             except Exception:
                 rng = None
-        return MazdaVehicleStatus(vin=vin, battery_percent=battery, remaining_range_km=rng, raw=data if isinstance(data, dict) else {"raw": data})
+        return MazdaVehicleStatus(
+            vin=vin,
+            battery_percent=battery,
+            remaining_range_km=rng,
+            raw=data if isinstance(data, dict) else {"raw": data},
+        )
 
     # ---- Commands ----
     async def _post_with_fallbacks(
         self,
         primary: str,
-        fallbacks: List[str],
+        fallbacks: list[str],
         *,
-        payload: Optional[Dict[str, Any]] = None,
+        payload: dict[str, Any] | None = None,
         tolerate_404: bool = False,
     ) -> None:
         """POST primary; on 404 try fallbacks sequentially. 401 is retried once. Optionally tolerate final 404."""
@@ -300,9 +322,18 @@ class MazdaApiV2:
         )
 
     # ---- Context manager ----
-    async def __aenter__(self) -> "MazdaApiV2":
+    async def __aenter__(self) -> MazdaApiV2:
         await self._ensure_session()
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
         await self._close_session()
+
+    async def aclose(self) -> None:
+        """Close owned aiohttp session/connector to avoid lingering timers/threads."""
+        try:
+            sess = getattr(self, "_session", None)
+            if getattr(self, "_own_session", False) and sess and not sess.closed:
+                await sess.close()
+        finally:
+            self._session = None

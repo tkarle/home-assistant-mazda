@@ -1,5 +1,3 @@
-
-# -*- coding: utf-8 -*-
 """
 region_names.py — central place for user‑friendly Mazda region names.
 
@@ -13,24 +11,22 @@ REGION_CHOICES maps *labels* -> *codes*, so users see "Europa" but you keep "MME
 normalize_region() accepts labels, aliases or codes and returns the canonical code.
 """
 
-from typing import Dict
-
 # Canonical Mazda region codes -> human labels
-REGION_LABELS: Dict[str, str] = {
+REGION_LABELS: dict[str, str] = {
     "MME": "Europa",
     "MNAO": "Nordamerika",
     "MJO": "Japan",
 }
 
 # What users will see in a dropdown (label) mapped to the code you store
-REGION_CHOICES: Dict[str, str] = {
+REGION_CHOICES: dict[str, str] = {
     "Europa": "MME",
     "Nordamerika": "MNAO",
     "Japan": "MJO",
 }
 
 # Common aliases you might receive (case-insensitive) -> code
-_ALIASES_TO_CODE: Dict[str, str] = {
+_ALIASES_TO_CODE: dict[str, str] = {
     # Europe
     "europe": "MME",
     "eu": "MME",
@@ -49,6 +45,7 @@ _ALIASES_TO_CODE: Dict[str, str] = {
     "jp": "MJO",
     "mjo": "MJO",
 }
+
 
 def normalize_region(value: str) -> str:
     """

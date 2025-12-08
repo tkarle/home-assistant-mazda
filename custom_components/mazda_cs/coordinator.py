@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
 import logging
+from typing import Any
 
 import aiohttp
 from homeassistant.core import HomeAssistant
@@ -9,9 +9,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN
 from .pymazda.api_v2 import (
-    MazdaApiV2,
-    MazdaTokenExpired,
     MazdaApiError,
+    MazdaApiV2,
     MazdaVehicle,
     MazdaVehicleStatus,
 )
@@ -28,7 +27,7 @@ class MazdaDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.password = password
         self.region = region
         # Cache vehicles after first fetch so we don't hit the endpoint repeatedly
-        self.vehicles: List[MazdaVehicle] = []
+        self.vehicles: list[MazdaVehicle] = []
         # Create a session owned by the API client
         self._session = aiohttp.ClientSession()
         self.api = MazdaApiV2(
@@ -54,7 +53,7 @@ class MazdaDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if not self.vehicles:
                 self.vehicles = await self.api.async_get_vehicles()
 
-            status: Dict[str, MazdaVehicleStatus] = {}
+            status: dict[str, MazdaVehicleStatus] = {}
             for v in self.vehicles:
                 status[v.vin] = await self.api.async_get_vehicle_status(v.vin)
 

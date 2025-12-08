@@ -1,1 +1,11 @@
 /debug/
+__pycache__/
+*.pyc
+.DS_Store
+
+.venv/
+*.bak
+
+# editor backups
+*.bak*
+*~

@@ -4,8 +4,8 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.core import callback
 
 from .const import DOMAIN
 
@@ -52,7 +52,9 @@ class MazdaConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
         return MazdaOptionsFlow(config_entry)
 
 

@@ -1,8 +1,12 @@
 from __future__ import annotations
+
 from typing import Any
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN, DATA_COORDINATOR
+
+from .const import DATA_COORDINATOR, DOMAIN
+
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
@@ -17,4 +21,8 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
         if "email" in red:
             red["email"] = "***"
         redacted["data"] = red
-    return {"config_entry": redacted, "vehicles": [getattr(v, "vin", None) for v in vehicles], "status": {k: getattr(v, "vin", None) for k, v in status.items()}}
+    return {
+        "config_entry": redacted,
+        "vehicles": [getattr(v, "vin", None) for v in vehicles],
+        "status": {k: getattr(v, "vin", None) for k, v in status.items()},
+    }
