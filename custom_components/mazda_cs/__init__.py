@@ -1,3 +1,4 @@
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 """Mazda Connected Services v2 setup (OAuth2 + PKCE)."""
 
 from __future__ import annotations
@@ -9,8 +10,6 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_REGION, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
-
-CONFIG_SCHEMA = cv.config_entry_only_config_schema("mazda_cs")
 
 from .const import DATA_COORDINATOR, DEFAULT_REGION, DOMAIN
 from .coordinator import MazdaDataCoordinator
