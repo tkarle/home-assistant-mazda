@@ -1,6 +1,3 @@
-CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-"""Mazda Connected Services v2 setup (OAuth2 + PKCE)."""
-
 from __future__ import annotations
 
 import logging
@@ -14,7 +11,10 @@ from homeassistant.helpers.typing import ConfigType
 from .const import DATA_COORDINATOR, DEFAULT_REGION, DOMAIN
 from .coordinator import MazdaDataCoordinator
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema("mazda_cs")
+
 _LOGGER = logging.getLogger(__name__)
+
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.SWITCH]
 
