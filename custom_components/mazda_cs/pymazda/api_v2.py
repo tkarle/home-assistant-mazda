@@ -83,7 +83,7 @@ class MazdaApiV2:
         self._authorize_url = f"{self._oauth_host}/{tenant}/b2c_1a_signin/oauth2/v2.0/authorize"
         self._token_url = f"{self._oauth_host}/{tenant}/b2c_1a_signin/oauth2/v2.0/token"
         self._self_asserted_base = f"{self._oauth_host}/{tenant}/B2C_1A_signin/SelfAsserted"
-        self._confirm_base = f"{self._oauth_host}/{tenant}/api/CombinedSigninAndSignup/confirmed"
+        self._confirm_base = f"{self._oauth_host}/{tenant}/B2C_1A_signin/api/CombinedSigninAndSignup/confirmed"
         self._api_base = api_base.rstrip("/")
 
         self._logger.debug(
@@ -242,7 +242,7 @@ class MazdaApiV2:
         # 2) Confirm (mock may 200 or 404)
         await self._safe_post(self._confirm_base, data={})
         # 3) Authorize (mock may 200 or 400)
-        await self._safe_get(self._authorize_url)
+        await self._safe_get(self._authorize_url, allow_redirects=False)
         # 4) Token (mock may 200 or 400 with invalid_request); still set synthetic tokens to satisfy tests
         await self._safe_post(self._token_url)
         expires_at = time.time() + 3600
