@@ -74,6 +74,7 @@ class MazdaApiV2:
         self._own_session = session is None
         self._logger = logger or LOGGER
 
+self._last_auth_code = None  # captured auth code
         # Default hosts for EU (tests use these)
         oauth_host = oauth_host_override or "https://eu.id.mazda.com"
         api_base = api_base_override or "https://hgs2iveu.mazda.com/connectedservices/v2"
