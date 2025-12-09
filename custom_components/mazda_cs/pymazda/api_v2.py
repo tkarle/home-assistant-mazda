@@ -84,7 +84,7 @@ self._last_auth_code = None  # captured auth code
         self._authorize_url = f"{self._oauth_host}/{tenant}/b2c_1a_signin/oauth2/v2.0/authorize"
         self._token_url = f"{self._oauth_host}/{tenant}/b2c_1a_signin/oauth2/v2.0/token"
         self._self_asserted_base = f"{self._oauth_host}/{tenant}/B2C_1A_signin/SelfAsserted"
-        self._confirm_base = f"{self._oauth_host}/{tenant}/B2C_1A_signin/api/CombinedSigninAndSignup/confirmed"
+        self._confirm_base = f"{self._oauth_host}/432b587f-88ad-40aa-9e5d-e6bcf9429e8d/B2C_1A_signin/api/CombinedSigninAndSignup/confirmed"
         self._api_base = api_base.rstrip("/")
 
         self._logger.debug(
