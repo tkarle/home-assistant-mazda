@@ -162,6 +162,8 @@ class MazdaApiV2:
                 elif "code" in d:
                     d["grant_type"] = "authorization_code"
 
+            if "grant_type" not in d:
+                d["grant_type"] = "authorization_code"
             kwargs["data"] = d
             headers = dict(kwargs.get("headers") or {})
             headers.setdefault("Content-Type", "application/x-www-form-urlencoded")
