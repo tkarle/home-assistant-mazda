@@ -117,6 +117,13 @@ class MazdaApiV2:
             self._logger.info("HTTP GET %s -> %s; body: %s", url, resp.status, body)
         else:
             self._logger.info("GET %s -> %s", url, resp.status)
+        # Debug: peek body for confirm endpoint (safe)
+        try:
+            if "CombinedSigninAndSignup/confirmed" in url and resp.status == 200:
+                _txt = await resp.text()
+                self._logger.debug("confirm body snippet=%r", _txt[:200])
+        except Exception:
+            pass
         return resp
 
     async def _safe_post(self, url: str, **kwargs: Any) -> aiohttp.ClientResponse:
