@@ -119,8 +119,46 @@ class MazdaApiV2:
             self._logger.info("GET %s -> %s", url, resp.status)
         return resp
 
-    async def _safe_post(self, url: str, **kwargs: Any) -> aiohttp.ClientResponse:
+async def _safe_post(self, url: str, **kwargs: Any) -> aiohttp.ClientResponse:
         await self._ensure_session()
+
+        # Normalize Mazda B2C token POSTs (grant_type + form headers), even if data is str/FormData
+        if "oauth2/v2.0/token" in url:
+            from urllib.parse import parse_qsl
+            data = kwargs.get("data")
+            d = None
+            if isinstance(data, dict):
+                d = dict(data)
+            elif isinstance(data, str):
+                try:
+                    d = dict(parse_qsl(data))
+                except Exception:
+                    d = None
+            elif hasattr(data, "_fields"):  # aiohttp.FormData (best effort)
+                try:
+                    tmp = {}
+                    for item in getattr(data, "_fields", []):
+                        if isinstance(item, (tuple, list)) and len(item) >= 2:
+                            tmp[str(item[0])] = str(item[1])
+                    d = tmp or None
+                except Exception:
+                    d = None
+            if d is None:
+                d = {}
+            if "grant_type" not in d:
+                if "refresh_token" in d:
+                    d["grant_type"] = "refresh_token"
+                elif "code" in d:
+                    d["grant_type"] = "authorization_code"
+            kwargs["data"] = d
+            headers = dict(kwargs.get("headers") or {})
+            headers.setdefault("Content-Type", "application/x-www-form-urlencoded")
+            kwargs["headers"] = headers
+            try:
+                self._logger.debug("TOKEN POST normalized payload keys=%s", sorted(d.keys()))
+            except Exception:
+                pass
+
         resp = await cast(aiohttp.ClientSession, self._session).post(url, **kwargs)
         try:
             body = await resp.text()
@@ -131,6 +169,7 @@ class MazdaApiV2:
         else:
             self._logger.info("POST %s -> %s", url, resp.status)
         return resp
+
 
     def _auth_headers(self) -> dict[str, str]:
         headers: dict[str, str] = {}
